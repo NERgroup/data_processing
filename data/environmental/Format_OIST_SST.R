@@ -168,7 +168,7 @@ doy_max <- 360
 
 # Years
 years_faint    <- c(2024)   # drop 2023 (and 2022)
-year_highlight <- 2015
+year_highlight <- 2014
 
 # 2025 (bold)
 anom_2025 <- daily_anom %>%
@@ -217,8 +217,8 @@ p_sub <- ggplot() +
   geom_line(
     data = plot_dat %>% filter(line == as.character(year_highlight)),
     aes(x = doy, y = anom_mean, color = line),
-    linewidth = 0.7,
-    alpha = 0.95
+    linewidth = 0.5,
+    alpha = 0.8
   ) +
   
   # Mean baseline (solid black) — mapped so it appears in legend
@@ -238,7 +238,7 @@ p_sub <- ggplot() +
   # Now include ONLY the lines you actually want in the legend
   scale_color_manual(values = c(
     "2024"             = "grey40",
-    "2015"             = "navyblue",
+    "2014"             = "navyblue",
     "Mean (2010–2024)" = "black",
     "2025"             = "indianred"
   )) +
@@ -247,8 +247,8 @@ p_sub <- ggplot() +
     x = "Day of year",
     y = "Regional mean SST anomaly (°C)",
     color    = "",
-    title    = "Daily regional mean SST anomalies (OISST v2.1)\nCA coastal / EEZ region",
-    subtitle = paste0("2025 (bold) vs. 2015 (last major heatwave), 2024, and baseline mean; through DOY ", doy_max)
+    title    = "Daily regional mean SST anomalies (OISST v2.1), CA coastal",
+    #subtitle = paste0("2025 (bold) vs. 2015 (last major heatwave), 2024, and baseline mean; through DOY ", doy_max)
   ) +
   theme_bw()
 
