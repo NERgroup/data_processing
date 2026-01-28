@@ -167,100 +167,167 @@ message("Saved daily regional mean anomalies to: ", outfile)
 doy_max <- 360
 
 # Years
-years_faint    <- c(2024)   # drop 2023 (and 2022)
+years_faint    <- c(2020, 2022, 2024)   # drop 2023 (and 2022)
 year_highlight <- 2014
 
-# 2025 (bold)
+
+# --- Build series -------------------------------------------------------------
+
 anom_2025 <- daily_anom %>%
   filter(year == 2025, doy <= doy_max) %>%
   transmute(doy, anom_mean, line = "2025")
 
-# 2015 (highlight comparison)
-anom_2015 <- daily_anom %>%
+anom_2014 <- daily_anom %>%
   filter(year == year_highlight, doy <= doy_max) %>%
   transmute(doy, anom_mean, line = as.character(year_highlight))
 
-# 2024 (faint context line)
 anom_faint <- daily_anom %>%
   filter(year %in% years_faint, doy <= doy_max) %>%
-  mutate(line = as.character(year)) %>%
-  transmute(doy, anom_mean, line)
+  transmute(doy, anom_mean, line = as.character(year))
 
-# Mean across all pre-2025 years (baseline)
 anom_mean <- daily_anom %>%
   filter(year != 2025, doy <= doy_max) %>%
   group_by(doy) %>%
   summarise(anom_mean = mean(anom_mean, na.rm = TRUE), .groups = "drop") %>%
   transmute(doy, anom_mean, line = "Mean (2010–2024)")
 
-# Combine
-plot_dat <- bind_rows(anom_faint, anom_2015, anom_mean, anom_2025)
+plot_dat <- bind_rows(anom_faint, anom_2014, anom_mean, anom_2025) %>%
+  filter(doy > 150)
 
-# Legend order
-plot_dat$line <- factor(
-  plot_dat$line,
-  levels = c("2024", as.character(year_highlight), "Mean (2010–2024)", "2025")
+# Legend order (THIS drives everything)
+legend_order <- c(
+  "Mean (2010–2024)",
+  as.character(year_highlight),
+  as.character(years_faint),
+  "2025"
 )
 
-# Plot
-p_sub <- ggplot() +
+# Force factor levels so ggplot can't "helpfully" reorder/drop them
+plot_dat <- plot_dat %>%
+  mutate(line = factor(line, levels = legend_order))
+
+# Colors (must match legend_order labels exactly)
+line_cols <- c(
+  "Mean (2010–2024)" = "black",
+  "2014"             = "navy",
+  "2020"             = "grey50",
+  "2022"             = "grey50",
+  "2024"             = "grey50",
+  "2025"             = "indianred"
+)
+
+# --- Plot --------------------------------------------------------------------
+
+p_sub <- ggplot(plot_dat, aes(x = doy, y = anom_mean)) +
   
-  # Faint context (2024)
+  # Faint context years
   geom_line(
     data = plot_dat %>% filter(line %in% as.character(years_faint)),
-    aes(x = doy, y = anom_mean, color = line),
+    aes(color = line),
     linewidth = 0.45,
-    alpha = 0.8
+    alpha = 0.5,
+    show.legend = TRUE
   ) +
   
-  # 2015 highlight
+  # Highlight year (2014)
   geom_line(
     data = plot_dat %>% filter(line == as.character(year_highlight)),
-    aes(x = doy, y = anom_mean, color = line),
-    linewidth = 0.5,
-    alpha = 0.8
+    aes(color = line),
+    linewidth = 0.55,
+    alpha = 0.85,
+    show.legend = TRUE
   ) +
   
-  # Mean baseline (solid black) — mapped so it appears in legend
+  # Mean baseline
   geom_line(
     data = plot_dat %>% filter(line == "Mean (2010–2024)"),
-    aes(x = doy, y = anom_mean, color = line),
-    linewidth = 0.7
+    aes(color = line),
+    linewidth = 0.75,
+    show.legend = TRUE
   ) +
   
-  # 2025 (boldest) — mapped so it appears in legend
+  # 2025 (bold)
   geom_line(
     data = plot_dat %>% filter(line == "2025"),
-    aes(x = doy, y = anom_mean, color = line),
-    linewidth = 1.1
+    aes(color = line),
+    linewidth = 1.1,
+    show.legend = TRUE
   ) +
   
-  # Now include ONLY the lines you actually want in the legend
-  scale_color_manual(values = c(
-    "2024"             = "grey40",
-    "2014"             = "navyblue",
-    "Mean (2010–2024)" = "black",
-    "2025"             = "indianred"
-  )) +
+  scale_color_manual(
+    values = line_cols,
+    limits = legend_order,  # force legend entries & order
+    drop   = FALSE          # don't drop levels even if sparse
+  ) +
+  
+  guides(
+    color = guide_legend(override.aes = list(alpha = 1))  # make legend lines fully visible
+  ) +
   
   labs(
     x = "Day of year",
-    y = "Regional mean SST anomaly (°C)",
-    color    = "",
-    title    = "Daily regional mean SST anomalies (OISST v2.1), CA coastal",
-    #subtitle = paste0("2025 (bold) vs. 2015 (last major heatwave), 2024, and baseline mean; through DOY ", doy_max)
+    y = "SST anomaly (°C)",
+    color = "",
+    title = "Daily SST anomalies, CA coastal"
   ) +
-  theme_bw()
+  
+  theme_bw(base_size = 7) +
+  theme(
+    plot.title = element_text(size = 8, face = "bold", hjust = 0),
+    axis.title = element_text(size = 7),
+    axis.text  = element_text(size = 6),
+    
+    legend.position  = "bottom",
+    legend.direction = "horizontal",
+    legend.title     = element_blank(),
+    legend.text      = element_text(size = 6),
+    legend.key.width  = unit(0.8, "lines"),
+    legend.key.height = unit(0.6, "lines"),
+    legend.margin = margin(t = 0, b = 0),
+    
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(t = 3, r = 3, b = 3, l = 3, unit = "pt")
+  )
 
 p_sub
 
 
 
+
+
+
+p_small <- p_sub +
+  theme_bw(base_size = 7) +   # <-- globally shrink text
+  theme(
+    plot.title = element_text(
+      size = 8,
+      face = "bold",
+      hjust = 0
+    ),
+    axis.title = element_text(size = 7),
+    axis.text  = element_text(size = 6),
+    
+    legend.position = "bottom",
+    legend.direction = "horizontal",
+    legend.title = element_blank(),
+    legend.text  = element_text(size = 6),
+    legend.key.width = unit(0.8, "lines"),
+    legend.key.height = unit(0.6, "lines"),
+    legend.margin = margin(t = 0, b = 0),
+    
+    panel.grid.minor = element_blank(),
+    
+    plot.margin = margin(
+      t = 3, r = 3, b = 3, l = 3, unit = "pt"
+    )
+  )
+
+
 ggsave(
-  filename = "~/Downloads/OISST_daily_anom_small.png",
+  filename = "~/Downloads/OISST_daily_anom_smallv4.png",
   plot     = p_small,
-  width    = 3,       # inches
-  height   = 1.5,
+  width    = 2.5,       # inches
+  height   = 2,
   dpi      = 600,
   units    = "in"
 )
