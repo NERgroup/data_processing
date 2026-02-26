@@ -1,0 +1,45 @@
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+! Using an auto-discovered, cached token.
+  To suppress this message, modify your code or options to clearly consent to
+  the use of a cached token.
+  See gargle's "Non-interactive auth" vignette for more details:
+  <https://gargle.r-lib.org/articles/non-interactive-auth.html>
+ℹ The googlesheets4 package is using a cached token for 'jogsmith@ucsc.edu'.
+✔ Reading from "KURBS Data Entry Form (Responses)".
+✔ Range ''Form Responses 1''.
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+! Using an auto-discovered, cached token.
+  To suppress this message, modify your code or options to clearly consent to
+  the use of a cached token.
+  See gargle's "Non-interactive auth" vignette for more details:
+  <https://gargle.r-lib.org/articles/non-interactive-auth.html>
+ℹ The googlesheets4 package is using a cached token for 'jogsmith@ucsc.edu'.
+✔ Reading from "KURBS Data Entry Form (Responses)".
+✔ Range ''Form Responses 1''.
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+! Using an auto-discovered, cached token.
+  To suppress this message, modify your code or options to clearly consent to
+  the use of a cached token.
+  See gargle's "Non-interactive auth" vignette for more details:
+  <https://gargle.r-lib.org/articles/non-interactive-auth.html>
+ℹ The googlesheets4 package is using a cached token for 'jogsmith@ucsc.edu'.
+✔ Reading from "KURBS Data Entry Form (Responses)".
+✔ Range ''Form Responses 1''.
