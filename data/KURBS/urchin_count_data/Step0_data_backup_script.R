@@ -85,12 +85,15 @@ backup_gsheet_gid(
 ################################################################################
 #Delete server backups older than 90 days
 
+#(optional safety: only delete in this folder, not subfolders)
 prune_cmd <- paste(
   "find",
   shQuote(backup_root),
+  "-maxdepth 1",
   "-type f",
   "-name 'backup_*.xlsx'",
   "-mtime +90",
+  "-print",
   "-delete"
 )
 
