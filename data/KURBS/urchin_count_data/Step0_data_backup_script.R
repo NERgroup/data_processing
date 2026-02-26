@@ -7,7 +7,7 @@ rm(list=ls())
 
 librarian::shelf("googlesheets4", "writexl", "fs")
 
-gs4_auth()
+#gs4_auth()
 
 server_root <- "/Volumes/enhydra/data"
 dir.exists(server_root)
@@ -81,3 +81,17 @@ backup_gsheet_gid(
   gid = gid,
   backup_root = backup_root
 )
+
+################################################################################
+#Delete server backups older than 90 days
+
+prune_cmd <- paste(
+  "find",
+  shQuote(backup_root),
+  "-type f",
+  "-name 'backup_*.xlsx'",
+  "-mtime +90",
+  "-delete"
+)
+
+system(prune_cmd)
