@@ -43,3 +43,129 @@
 ℹ The googlesheets4 package is using a cached token for 'jogsmith@ucsc.edu'.
 ✔ Reading from "KURBS Data Entry Form (Responses)".
 ✔ Range ''Form Responses 1''.
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+Error: [EACCES] Failed to make directory '/Volumes/enhydra': permission denied
+Execution halted
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+Error: [EACCES] Failed to make directory '/Volumes/enhydra': permission denied
+Execution halted
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+Error: [EACCES] Failed to make directory '/Volumes/enhydra': permission denied
+Execution halted
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+Error: [EACCES] Failed to make directory '/Volumes/enhydra': permission denied
+Execution halted
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+Error: [EACCES] Failed to make directory '/Volumes/enhydra': permission denied
+Execution halted
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+Error: [EACCES] Failed to make directory '/Volumes/enhydra': permission denied
+Execution halted
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+Error: [EACCES] Failed to make directory '/Volumes/enhydra': permission denied
+Execution halted
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+Error: [EACCES] Failed to stat '/Volumes/enhydra': permission denied
+Execution halted
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+Error: [EACCES] Failed to make directory '/Volumes/enhydra': permission denied
+Execution halted
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+Error: [EACCES] Failed to stat '/Volumes/enhydra': permission denied
+Execution halted
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+Error: [EACCES] Failed to make directory '/Volumes/enhydra': permission denied
+Execution halted
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+Error: [EACCES] Failed to make directory '/Volumes/enhydra': permission denied
+Execution halted
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+Error: [EACCES] Failed to make directory '/Volumes/enhydra': permission denied
+Execution halted
+
+  The 'cran_repo' argument in shelf() was not set, so it will use
+  cran_repo = 'https://cran.r-project.org' by default.
+
+  To avoid this message, set the 'cran_repo' argument to a CRAN
+  mirror URL (see https://cran.r-project.org/mirrors.html) or set
+  'quiet = TRUE'.
+Error: [EACCES] Failed to make directory '/Volumes/enhydra': permission denied
+Execution halted
