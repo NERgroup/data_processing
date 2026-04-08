@@ -1,6 +1,6 @@
 ################################################################################
 # Daily regional-mean SST anomalies (OISST) for CA coastal / EEZ region
-# Years: 2014, 2017, 2020, 2023, 2025
+# Years: 2014, 2017, 2020, 2023, 2025 + show continuation into 2026
 #
 # Dataset: ncdcOisst21Agg_LonPM180 (NOAA OISST v2.1 daily, 0.25°, global)
 ################################################################################
@@ -43,8 +43,6 @@ lon_range <- c(-130, -114)
 #lat_range <- c(36.606670, 36.606670)
 #lon_range <- c(-121.882710, -121.882710)
 
-
-
 ################################################################################
 # Helper: download ONE YEAR of OISST as daily regional means (chunked by month)
 ################################################################################
@@ -57,9 +55,9 @@ download_oisst_year_mean_chunked <- function(year,
   
   # Start / end for this year
   t_start <- as.Date(paste0(year, "-01-01"))
+  
+  # If we're downloading the current year (2026), truncate to latest available
   if (year == lubridate::year(Sys.Date())) {
-    # Dataset currently ends at 2025-11-25 (per ERDDAP error message)
-   # t_final <- as.Date("2025-12-31")
     t_final <- as.Date("2026-01-24")
   } else {
     t_final <- as.Date(paste0(year, "-12-31"))
@@ -121,8 +119,6 @@ download_oisst_year_mean_chunked <- function(year,
 # Years to download
 ################################################################################
 
-#years_to_get <- c(2014, 2017, 2020, 2023, 2025)
-
 years_to_get <- c(2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 
                   2020, 2021, 2022, 2023, 2024, 2025, 2026)
 
@@ -161,53 +157,83 @@ message("Saved daily regional mean anomalies to: ", outfile)
 
 ################################################################################
 # Plot: DOY on x, anomaly on y, separate line for each year
+# PLUS: tack 2026 onto the right side by shifting its DOY to 365 + DOY
+# PLUS: extend climatology (Mean 2010–2024) into early 2026 using DOY 1:last_doy_2026
 ################################################################################
 
-
 # Choose your truncation window for the figure
+doy_min <- 150
 doy_max <- 360
 
 # Years
-years_faint    <- c(2020, 2022, 2024)   # drop 2023 (and 2022)
+years_faint    <- c(2020, 2022, 2024)
 year_highlight <- 2014
 
+# Detect how far 2026 actually goes (should be ~24 if you truncated at 2026-01-24)
+last_doy_2026 <- daily_anom %>%
+  filter(year == 2026) %>%
+  summarise(last = max(doy, na.rm = TRUE)) %>%
+  pull(last)
 
 # --- Build series -------------------------------------------------------------
 
 anom_2026 <- daily_anom %>%
-  filter(year == 2026, doy <= doy_max) %>%
-  transmute(doy, anom_mean, line = "2026")
-
+  filter(year == 2026) %>%
+  transmute(year = 2026, doy, anom_mean, line = "2026")
 
 anom_2025 <- daily_anom %>%
-  filter(year == 2025, doy <= doy_max) %>%
-  transmute(doy, anom_mean, line = "2025")
+  filter(year == 2025) %>%
+  transmute(year = 2025, doy, anom_mean, line = "2025")
 
 anom_2014 <- daily_anom %>%
-  filter(year == year_highlight, doy <= doy_max) %>%
-  transmute(doy, anom_mean, line = as.character(year_highlight))
+  filter(year == year_highlight) %>%
+  transmute(year = year_highlight, doy, anom_mean, line = as.character(year_highlight))
 
 anom_faint <- daily_anom %>%
-  filter(year %in% years_faint, doy <= doy_max) %>%
-  transmute(doy, anom_mean, line = as.character(year))
+  filter(year %in% years_faint) %>%
+  transmute(year, doy, anom_mean, line = as.character(year))
 
+# Climatology / mean baseline (explicitly 2010–2024)
 anom_mean <- daily_anom %>%
-  filter(year != 2025, doy <= doy_max) %>%
+  filter(year %in% 2010:2024) %>%
   group_by(doy) %>%
   summarise(anom_mean = mean(anom_mean, na.rm = TRUE), .groups = "drop") %>%
-  transmute(doy, anom_mean, line = "Mean (2010–2024)")
+  transmute(year = NA_integer_, doy, anom_mean, line = "Mean (2010–2024)")
+
+# --- NEW: extend climatology into early 2026 using DOY 1:last_doy_2026 --------
+anom_mean_ext2026 <- anom_mean %>%
+  filter(doy %in% 1:last_doy_2026) %>%
+  mutate(mean_ext = TRUE)
+
+# Flag others (for xplot shifting)
+anom_mean  <- anom_mean  %>% mutate(mean_ext = FALSE)
+anom_faint <- anom_faint %>% mutate(mean_ext = FALSE)
+anom_2014  <- anom_2014  %>% mutate(mean_ext = FALSE)
+anom_2025  <- anom_2025  %>% mutate(mean_ext = FALSE)
+anom_2026  <- anom_2026  %>% mutate(mean_ext = FALSE)
 
 plot_dat <- bind_rows(
   anom_faint,
   anom_2014,
   anom_mean,
+  anom_mean_ext2026,   # <-- actual climatology values for DOY 1:last_doy_2026
   anom_2025,
   anom_2026
 ) %>%
-  filter(doy > 150)
+  mutate(
+    # shift both 2026 and the climatology extension into the right-side panel
+    xplot = if_else(line == "2026" | mean_ext, doy + 365, doy)
+  ) %>%
+  filter(
+    # Main window for all "regular" lines
+    (line != "2026" & !mean_ext & doy >= doy_min & doy <= 365) |
+      # 2026 window
+      (line == "2026" & doy <= last_doy_2026) |
+      # climatology extension window
+      (mean_ext & doy <= last_doy_2026)
+  )
 
-
-# Legend order (THIS drives everything)
+# Legend order
 legend_order <- c(
   "Mean (2010–2024)",
   as.character(year_highlight),
@@ -216,12 +242,10 @@ legend_order <- c(
   "2026"
 )
 
-# Force factor levels so ggplot can't "helpfully" reorder/drop them
 plot_dat <- plot_dat %>%
   mutate(line = factor(line, levels = legend_order))
 
-
-# Colors (must match legend_order labels exactly)
+# Colors
 line_cols <- c(
   "Mean (2010–2024)" = "black",
   "2014"             = "navy",
@@ -232,10 +256,22 @@ line_cols <- c(
   "2026"             = "darkorange"
 )
 
+# X-axis breaks/labels
+breaks_main  <- seq(doy_min, doy_max, by = 30)
+breaks_extra <- c(365, 365 + last_doy_2026)
+x_breaks     <- sort(unique(c(breaks_main, breaks_extra)))
+
+x_labels <- sapply(x_breaks, function(b) {
+  if (b < 365) return(as.character(b))
+  if (b == 365) return("365\nJan 1")
+  as.character(b - 365)
+})
 
 # --- Plot --------------------------------------------------------------------
 
-p_sub <- ggplot(plot_dat, aes(x = doy, y = anom_mean)) +
+p_sub <- ggplot(plot_dat, aes(x = xplot, y = anom_mean)) +
+  
+  geom_vline(xintercept = 365, linewidth = 0.35, linetype = "dashed", alpha = 0.7) +
   
   # Faint context years
   geom_line(
@@ -255,7 +291,7 @@ p_sub <- ggplot(plot_dat, aes(x = doy, y = anom_mean)) +
     show.legend = TRUE
   ) +
   
-  # Mean baseline
+  # Mean baseline + mean extension (same series, continuous across the break)
   geom_line(
     data = plot_dat %>% filter(line == "Mean (2010–2024)"),
     aes(color = line),
@@ -270,28 +306,45 @@ p_sub <- ggplot(plot_dat, aes(x = doy, y = anom_mean)) +
     linewidth = 1.1,
     show.legend = TRUE
   ) +
-  # 2026 (bold, orange)
+  
+  # 2026 (bold)
   geom_line(
     data = plot_dat %>% filter(line == "2026"),
     aes(color = line),
     linewidth = 1.1,
     show.legend = TRUE
-  )+
+  ) +
+  
   scale_color_manual(
     values = line_cols,
-    limits = legend_order,  # force legend entries & order
-    drop   = FALSE          # don't drop levels even if sparse
+    limits = legend_order,
+    drop   = FALSE
   ) +
   
-  guides(
-    color = guide_legend(override.aes = list(alpha = 1))  # make legend lines fully visible
+  scale_x_continuous(
+    breaks = x_breaks,
+    labels = x_labels,
+    expand = expansion(mult = c(0.01, 0.02))
   ) +
+  
+  guides(color = guide_legend(override.aes = list(alpha = 1))) +
   
   labs(
-    x = "Day of year",
+    x = "Day of year (2026 continues at right)",
     y = "SST anomaly (°C)",
     color = "",
     title = "Daily SST anomalies, CA coastal"
+  ) +
+  
+  annotate(
+    "text",
+    x = 365 + last_doy_2026 - 2,
+    y = max(plot_dat$anom_mean, na.rm = TRUE) - 0.15,
+    label = "2026",
+    color = "darkorange",
+    size = 8,
+    fontface = "bold",
+    hjust = 1
   ) +
   
   theme_bw(base_size = 7) +
@@ -299,7 +352,6 @@ p_sub <- ggplot(plot_dat, aes(x = doy, y = anom_mean)) +
     plot.title = element_text(size = 8, face = "bold", hjust = 0),
     axis.title = element_text(size = 7),
     axis.text  = element_text(size = 6),
-    
     legend.position  = "bottom",
     legend.direction = "horizontal",
     legend.title     = element_blank(),
@@ -307,29 +359,19 @@ p_sub <- ggplot(plot_dat, aes(x = doy, y = anom_mean)) +
     legend.key.width  = unit(0.8, "lines"),
     legend.key.height = unit(0.6, "lines"),
     legend.margin = margin(t = 0, b = 0),
-    
     panel.grid.minor = element_blank(),
     plot.margin = margin(t = 3, r = 3, b = 3, l = 3, unit = "pt")
   )
 
 p_sub
 
-
-
-
-
-
+# Optional small export
 p_small <- p_sub +
-  theme_bw(base_size = 7) +   # <-- globally shrink text
+  theme_bw(base_size = 7) +
   theme(
-    plot.title = element_text(
-      size = 8,
-      face = "bold",
-      hjust = 0
-    ),
+    plot.title = element_text(size = 8, face = "bold", hjust = 0),
     axis.title = element_text(size = 7),
     axis.text  = element_text(size = 6),
-    
     legend.position = "bottom",
     legend.direction = "horizontal",
     legend.title = element_blank(),
@@ -337,23 +379,15 @@ p_small <- p_sub +
     legend.key.width = unit(0.8, "lines"),
     legend.key.height = unit(0.6, "lines"),
     legend.margin = margin(t = 0, b = 0),
-    
     panel.grid.minor = element_blank(),
-    
-    plot.margin = margin(
-      t = 3, r = 3, b = 3, l = 3, unit = "pt"
-    )
+    plot.margin = margin(t = 3, r = 3, b = 3, l = 3, unit = "pt")
   )
-
 
 ggsave(
   filename = "~/Downloads/OISST_daily_anom_smallv4.png",
   plot     = p_small,
-  width    = 2.5,       # inches
+  width    = 2.5,
   height   = 2,
   dpi      = 600,
   units    = "in"
 )
-
-
-
