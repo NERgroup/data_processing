@@ -303,3 +303,213 @@ fs::dir_create(output_dir, recurse = TRUE)
 readr::write_csv(sample_counts_processed, output_file)
 
 output_file
+
+
+################################################################################
+# quick glance at data
+
+
+
+
+################################################################################
+# Prep plotting data
+#
+# Assumes these objects already exist:
+#   - dat_clean
+#   - effort_soak_time_clean
+################################################################################
+
+librarian::shelf(
+  "dplyr",
+  "stringr",
+  "ggplot2",
+  "scales",
+  "lubridate"
+)
+
+################################################################################
+# Build plotting table at the sample_type level
+# Keep benthic and suspended separate
+
+plot_dat <- dat_clean %>%
+  mutate(
+    sample_type = case_when(
+      str_to_lower(str_squish(substrate_type)) == "benthic" ~ "benthic_brush",
+      str_to_lower(str_squish(substrate_type)) == "suspended" ~ "suspended_brush",
+      TRUE ~ NA_character_
+    ),
+    
+    total_urchins =
+      coalesce(number_of_purple_urchins, 0) +
+      coalesce(number_of_red_urchins, 0) +
+      coalesce(number_of_unidentified_urchins, 0)
+  ) %>%
+  filter(!is.na(sample_type)) %>%
+  group_by(site, collection_date, sample_type) %>%
+  summarise(
+    total_urchins = sum(total_urchins, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  left_join(
+    effort_soak_time_clean %>%
+      select(site, sample_type, date_collected, soak_time),
+    by = c("site", "sample_type", "collection_date" = "date_collected")
+  ) %>%
+  mutate(
+    daily_counts = total_urchins / soak_time,
+    
+    patch_type = case_when(
+      str_detect(site, "^KF") ~ "forest",
+      str_detect(site, "^BR") ~ "barren",
+      TRUE ~ NA_character_
+    ),
+    
+    position = case_when(
+      sample_type == "benthic_brush" ~ "benthic",
+      sample_type == "suspended_brush" ~ "suspended",
+      TRUE ~ NA_character_
+    ),
+    
+    patch_type = factor(patch_type, levels = c("forest", "barren")),
+    position = factor(position, levels = c("benthic", "suspended")),
+    
+    # small offset so zeros can be retained on log scale
+    daily_counts_adj = daily_counts + 0.01
+  ) %>%
+  filter(
+    !is.na(daily_counts),
+    !is.na(patch_type),
+    !is.na(position),
+    is.finite(daily_counts)
+  )
+
+################################################################################
+# 1. Log-scale boxplot
+
+p_box_log <- ggplot(
+  plot_dat,
+  aes(x = patch_type, y = daily_counts_adj, fill = position)
+) +
+  geom_boxplot(
+    position = position_dodge(width = 0.75),
+    width = 0.65,
+    outlier.shape = NA,
+    alpha = 0.8
+  ) +
+  geom_point(
+    aes(group = position),
+    position = position_jitterdodge(
+      jitter.width = 0.12,
+      dodge.width = 0.75
+    ),
+    alpha = 0.7,
+    size = 2
+  ) +
+  scale_y_log10(labels = comma) +
+  labs(
+    x = "Patch type",
+    y = "Daily urchin counts (log scale, +0.01 offset)",
+    fill = "Position",
+    title = "Daily urchin recruitment by patch type and position"
+  ) +
+  theme_bw()
+
+p_box_log
+
+################################################################################
+# 2. Histogram faceted by patch type, stacked by position
+# Suspended stacked above benthic
+
+plot_dat_hist <- plot_dat %>%
+  mutate(
+    position = factor(position, levels = c("suspended", "benthic"))
+  )
+
+p_hist <- ggplot(
+  plot_dat_hist,
+  aes(x = daily_counts_adj, fill = position)
+) +
+  geom_histogram(
+    bins = 25,
+    alpha = 0.8,
+    position = "stack"
+  ) +
+  scale_x_log10(labels = comma) +
+  facet_wrap(~ patch_type, ncol = 1) +
+  labs(
+    x = "Daily urchin counts (log scale, +0.01 offset)",
+    y = "Frequency",
+    fill = "Position",
+    title = "Distribution of daily urchin recruitment"
+  ) +
+  theme_bw()
+
+p_hist
+
+################################################################################
+# 3. Weekly total recruits across all sampling for benthic vs suspended
+
+weekly_dat <- plot_dat %>%
+  mutate(
+    week = floor_date(collection_date, unit = "week", week_start = 1)
+  ) %>%
+  group_by(week, position) %>%
+  summarise(
+    total_urchins = sum(total_urchins, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    position = factor(position, levels = c("benthic", "suspended"))
+  )
+
+p_weekly <- ggplot(
+  weekly_dat,
+  aes(x = week, y = total_urchins, color = position, group = position)
+) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(
+    x = "Week",
+    y = "Total urchin recruits",
+    color = "Position",
+    title = "Weekly total urchin recruits across all sampling"
+  ) +
+  theme_bw()
+
+p_weekly
+
+################################################################################
+# Save plots to Downloads
+
+download_dir <- path.expand("~/Downloads")
+
+ggsave(
+  filename = file.path(download_dir, "urchin_boxplot_log.png"),
+  plot = p_box_log,
+  width = 7,
+  height = 5,
+  dpi = 300
+)
+
+ggsave(
+  filename = file.path(download_dir, "urchin_histogram_stacked.png"),
+  plot = p_hist,
+  width = 7,
+  height = 7,
+  dpi = 300
+)
+
+ggsave(
+  filename = file.path(download_dir, "urchin_weekly_totals.png"),
+  plot = p_weekly,
+  width = 8,
+  height = 5,
+  dpi = 300
+)
+
+################################################################################
+# Return save paths
+
+file.path(download_dir, "urchin_boxplot_log.png")
+file.path(download_dir, "urchin_histogram_stacked.png")
+file.path(download_dir, "urchin_weekly_totals.png")
