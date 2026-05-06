@@ -1,3 +1,8 @@
+
+
+###MUST RUN site_table/Step1_process_site_table.R first!!
+
+
 rm(list = ls())
 
 ################################################################################
@@ -122,6 +127,13 @@ dat_clean <- dat_raw %>%
     
     notes = str_squish(notes),
     notes = na_if(notes, ""),
+    
+    across(
+      c(number_of_purple_urchins,
+        number_of_red_urchins,
+        number_of_unidentified_urchins),
+      ~ as.numeric(unlist(.x))
+    ),
     
     total_urchins =
       coalesce(number_of_purple_urchins, 0) +
@@ -331,6 +343,52 @@ librarian::shelf(
 # Build plotting table at the sample_type level
 # Keep benthic and suspended separate
 
+library(tidyverse)
+library(lubridate)
+library(scales)
+
+################################################################################
+# Figure styling
+
+position_cols <- c(
+  "benthic" = "#0072B2",
+  "suspended" = "#D55E00"
+)
+
+patch_labs <- c(
+  "forest" = "Forest",
+  "barren" = "Barren"
+)
+
+position_labs <- c(
+  "benthic" = "Benthic",
+  "suspended" = "Suspended"
+)
+
+my_theme <- theme_classic(base_size = 13) +
+  theme(
+    axis.line = element_line(color = "black", linewidth = 0.5),
+    axis.ticks = element_line(color = "black", linewidth = 0.5),
+    axis.text = element_text(color = "black", size = 11),
+    axis.title = element_text(color = "black", size = 13),
+    
+    legend.position = "right",
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 11),
+    
+    strip.background = element_blank(),
+    strip.text = element_text(size = 13, face = "bold"),
+    
+    plot.title = element_text(size = 14, face = "bold", hjust = 0),
+    plot.subtitle = element_text(size = 12, color = "gray30", hjust = 0),
+    
+    panel.grid = element_blank(),
+    panel.border = element_blank()
+  )
+
+################################################################################
+# Build plotting data
+
 plot_dat <- dat_clean %>%
   mutate(
     sample_type = case_when(
@@ -373,7 +431,7 @@ plot_dat <- dat_clean %>%
     patch_type = factor(patch_type, levels = c("forest", "barren")),
     position = factor(position, levels = c("benthic", "suspended")),
     
-    # small offset so zeros can be retained on log scale
+    # Small offset so zeros can be retained on log scale
     daily_counts_adj = daily_counts + 0.01
   ) %>%
   filter(
@@ -392,27 +450,47 @@ p_box_log <- ggplot(
 ) +
   geom_boxplot(
     position = position_dodge(width = 0.75),
-    width = 0.65,
+    width = 0.62,
     outlier.shape = NA,
-    alpha = 0.8
+    alpha = 0.75,
+    color = "black",
+    linewidth = 0.45
   ) +
   geom_point(
-    aes(group = position),
+    aes(color = position, group = position),
     position = position_jitterdodge(
       jitter.width = 0.12,
       dodge.width = 0.75
     ),
-    alpha = 0.7,
-    size = 2
+    alpha = 0.75,
+    size = 2.2,
+    stroke = 0
   ) +
-  scale_y_log10(labels = comma) +
+  scale_fill_manual(
+    values = position_cols,
+    labels = position_labs,
+    name = "Position"
+  ) +
+  scale_color_manual(
+    values = position_cols,
+    labels = position_labs,
+    name = "Position"
+  ) +
+  scale_x_discrete(labels = patch_labs) +
+  scale_y_log10(
+    labels = comma,
+    expand = expansion(mult = c(0.04, 0.12))
+  ) +
   labs(
     x = "Patch type",
-    y = "Daily urchin counts (log scale, +0.01 offset)",
-    fill = "Position",
+    y = expression("Daily urchin recruits " ~ log[10] ~ "(count + 0.01)"),
     title = "Daily urchin recruitment by patch type and position"
   ) +
-  theme_bw()
+  guides(
+    fill = guide_legend(override.aes = list(alpha = 0.75)),
+    color = "none"
+  ) +
+  my_theme
 
 p_box_log
 
@@ -431,18 +509,35 @@ p_hist <- ggplot(
 ) +
   geom_histogram(
     bins = 25,
-    alpha = 0.8,
-    position = "stack"
+    alpha = 0.85,
+    position = "stack",
+    color = "white",
+    linewidth = 0.25
   ) +
-  scale_x_log10(labels = comma) +
-  facet_wrap(~ patch_type, ncol = 1) +
+  scale_fill_manual(
+    values = position_cols,
+    breaks = c("benthic", "suspended"),
+    labels = position_labs,
+    name = "Position"
+  ) +
+  scale_x_log10(
+    labels = comma,
+    expand = expansion(mult = c(0.02, 0.08))
+  ) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.10))
+  ) +
+  facet_wrap(
+    ~ patch_type,
+    ncol = 1,
+    labeller = labeller(patch_type = patch_labs)
+  ) +
   labs(
-    x = "Daily urchin counts (log scale, +0.01 offset)",
+    x = expression("Daily urchin recruits " ~ log[10] ~ "(count + 0.01)"),
     y = "Frequency",
-    fill = "Position",
     title = "Distribution of daily urchin recruitment"
   ) +
-  theme_bw()
+  my_theme
 
 p_hist
 
@@ -466,15 +561,28 @@ p_weekly <- ggplot(
   weekly_dat,
   aes(x = week, y = total_urchins, color = position, group = position)
 ) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2) +
+  geom_line(linewidth = 1.1, alpha = 0.9) +
+  geom_point(size = 2.6, alpha = 0.9) +
+  scale_color_manual(
+    values = position_cols,
+    labels = position_labs,
+    name = "Position"
+  ) +
+  scale_y_continuous(
+    labels = comma,
+    expand = expansion(mult = c(0, 0.12))
+  ) +
+  scale_x_date(
+    date_breaks = "2 weeks",
+    date_labels = "%b %d",
+    expand = expansion(mult = c(0.02, 0.04))
+  ) +
   labs(
     x = "Week",
     y = "Total urchin recruits",
-    color = "Position",
     title = "Weekly total urchin recruits across all sampling"
   ) +
-  theme_bw()
+  my_theme
 
 p_weekly
 
@@ -484,7 +592,7 @@ p_weekly
 download_dir <- path.expand("~/Downloads")
 
 ggsave(
-  filename = file.path(download_dir, "urchin_boxplot_log.png"),
+  filename = file.path(download_dir, "urchin_boxplot_logv2.png"),
   plot = p_box_log,
   width = 7,
   height = 5,
@@ -492,7 +600,7 @@ ggsave(
 )
 
 ggsave(
-  filename = file.path(download_dir, "urchin_histogram_stacked.png"),
+  filename = file.path(download_dir, "urchin_histogram_stackedv2.png"),
   plot = p_hist,
   width = 7,
   height = 7,
@@ -500,7 +608,7 @@ ggsave(
 )
 
 ggsave(
-  filename = file.path(download_dir, "urchin_weekly_totals.png"),
+  filename = file.path(download_dir, "urchin_weekly_totalsv2.png"),
   plot = p_weekly,
   width = 8,
   height = 5,
