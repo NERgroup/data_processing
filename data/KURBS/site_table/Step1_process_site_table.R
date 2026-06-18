@@ -371,6 +371,62 @@ effort_soak_time_clean %>%
 effort_soak_time_clean %>%
   filter(!is.na(soak_time) & soak_time <= 0)
 
+
+################################################################################
+################################################################################
+# Diagnostics
+
+# 1. Unknown sample labels
+
+media_events_long %>%
+  filter(is.na(sample_type)) %>%
+  distinct(samples)
+
+# 2. Duplicate processed records
+
+effort_table_clean %>%
+  count(site, event_date, event_record, sample_type) %>%
+  filter(n > 1)
+
+# 3. Collections with no deployment match
+
+effort_soak_time_clean %>%
+  filter(is.na(date_deployed))
+
+# 4. Strange soak times
+
+effort_soak_time_clean %>%
+  filter(soak_time < 20 | soak_time > 45)
+
+# 5. Missing media types on a sampling day
+
+expected_types <- c(
+  "benthic_brush",
+  "suspended_brush",
+  "benthic_plate",
+  "suspended_plate"
+)
+
+effort_table_clean %>%
+  distinct(site, event_date, event_record) %>%
+  filter(event_record %in% c("Deployment", "Collection")) %>%
+  tidyr::crossing(sample_type = expected_types) %>%
+  anti_join(
+    effort_table_clean,
+    by = c(
+      "site",
+      "event_date",
+      "event_record",
+      "sample_type"
+    )
+  )
+
+# 6. Missing site or date
+
+effort_clean %>%
+  filter(is.na(site) | is.na(event_date))
+
+
 ################################################################################
 # Save outputs
 
