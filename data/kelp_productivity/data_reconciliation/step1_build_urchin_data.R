@@ -330,7 +330,69 @@ anti_join(
 )
 
 
+################################################################################
+#Step 6: csize frequency 
 
+
+urch_sizefreq_build1 <- urch_build1 %>%
+  filter(
+    str_to_lower(species) %in% c("purple", "red"),
+    behavior_clean %in% c("concealed", "exposed"),
+    !is.na(size),
+    str_trim(size) != ""
+  ) %>%
+  mutate(
+    size = as.numeric(size)
+  ) %>%
+  group_by(
+    site, site_type, zone, date, transect,
+    depth, depth_units, species, size
+  ) %>%
+  summarise(
+    size_count = sum(count, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  left_join(
+    urch_den_live_build1 %>%
+      filter(str_to_lower(species) %in% c("purple", "red")) %>%
+      dplyr::select(
+        site, site_type, zone, date, transect,
+        depth, depth_units, species,
+        total_urchins,
+        density_urchins_m2
+      ),
+    by = c(
+      "site", "site_type", "zone", "date", "transect",
+      "depth", "depth_units", "species"
+    )
+  ) %>%
+  rename(
+    total_density_urchins_m2 = density_urchins_m2
+  ) %>%
+  arrange(site, zone, date, transect, species, size)
+
+
+
+###############################################################################
+#Export
+processed_dir <- "/Volumes/enhydra/data/kelp_productivity/benthic_surveys/processed"
+
+if (!dir.exists(processed_dir)) {
+  stop("Processed directory does not exist or the volume is not mounted.")
+}
+
+processed_tables <- list(
+  urch_den_build1_wide = urch_den_build1_wide,
+  urch_sizefreq_build1 = urch_sizefreq_build1
+)
+
+saveRDS(
+  processed_tables,
+  file = file.path(
+    processed_dir,
+    "urchin_density_and_size_frequency_build1.rds"
+  )
+)
 
 
 
