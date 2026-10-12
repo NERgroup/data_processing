@@ -227,4 +227,14 @@ upc_points_over_20 <- kelp_transect_build1 %>%
 
 upc_points_over_20
 
+################################################################################
+#Export
+
+saveRDS(
+  kelp_transect_build1,
+  file = file.path(processed_dir, "kelp_transect_build1.rds")
+)
+
+
+
 
