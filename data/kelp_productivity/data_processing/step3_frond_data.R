@@ -191,10 +191,42 @@ processed_dir <- paste0(
 
 
 save(
+  fronds_build1,
   plant_productivity,
   plant_exports,
   file = file.path(
     processed_dir,
-    "frond_productivity_and_exports_build1.RData"
+    "frond_data_build1.RData"
   )
+)
+
+writeLines(
+  c(
+    "Objects in frond_data_build1.RData",
+    "",
+    "fronds_build1",
+    "  Cleaned, unaggregated long-format frond observations. Site codes and",
+    "  numeric count/depth fields are standardized; depth recorded in feet is",
+    "  converted to meters. Missing total_frond values are filled from the",
+    "  color counts, and tag-cohort dates are joined. The date and frond_length",
+    "  fields retain their source character format.",
+    "",
+    "plant_productivity",
+    "  Plant-visit intervals with a prior visit. net_frond_change is the",
+    "  difference in total_frond between visits; net_productivity_per_30_days",
+    "  standardizes that net change to 30 days. This is net frond-count change,",
+    "  not gross production. The month is based on the later survey date.",
+    "",
+    "plant_exports",
+    "  Plant-visit intervals with a prior visit. exported_fronds estimates",
+    "  apparent export from positive declines in frond counts by color, and",
+    "  exports_per_30_days standardizes that count to 30 days. The month is",
+    "  based on the later survey date.",
+    "",
+    "For both derived tables, the first visit for each plant is omitted because",
+    "it has no prior visit for calculating a change. The duplicate NABR01 survey",
+    "dated 20260917 and ambiguous plant-visit profiles are excluded from the",
+    "derived calculations; they remain in fronds_build1."
+  ),
+  con = file.path(processed_dir, "README_frond_data_build1.txt")
 )
