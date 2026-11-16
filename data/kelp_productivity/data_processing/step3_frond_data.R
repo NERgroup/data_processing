@@ -1,4 +1,4 @@
-# jogmsith@ucsc.edu
+#jogsmith@ucsc.edu
 
 rm(list = ls())
 
@@ -150,24 +150,6 @@ plant_productivity <- plant_visit_profiles %>%
   filter(!is.na(net_productivity_per_30_days)) %>%
   mutate(month = factor(format(date, "%b"), levels = month.abb))
 
-ggplot(
-  plant_productivity,
-  aes(x = month, y = net_productivity_per_30_days)
-) +
-  geom_hline(yintercept = 0) +
-  geom_boxplot(outlier.shape = NA) +
-  geom_jitter(
-    aes(color = site),
-    width = 0.12,
-    height = 0,
-    alpha = 0.7
-  ) +
-  labs(
-    x = "Survey month",
-    y = "Net frond change per plant per 30 days",
-    color = "Site"
-  )
-
 
 ################################################################################
 # Estimate apparent frond exports by plant and visit
@@ -198,19 +180,21 @@ plant_exports <- plant_visit_profiles %>%
   filter(!is.na(exports_per_30_days)) %>%
   mutate(month = factor(format(date, "%b"), levels = month.abb))
 
-ggplot(
+
+################################################################################
+# Export
+
+processed_dir <- paste0(
+  "/Volumes/enhydra/data/kelp_productivity/",
+  "benthic_surveys/processed"
+)
+
+
+save(
+  plant_productivity,
   plant_exports,
-  aes(x = month, y = exports_per_30_days)
-) +
-  geom_boxplot(outlier.shape = NA) +
-  geom_jitter(
-    aes(color = site),
-    width = 0.12,
-    height = 0,
-    alpha = 0.7
-  ) +
-  labs(
-    x = "Survey month",
-    y = "Apparent frond export per plant per 30 days",
-    color = "Site"
+  file = file.path(
+    processed_dir,
+    "frond_productivity_and_exports_build1.RData"
   )
+)
