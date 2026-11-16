@@ -1,17 +1,15 @@
 #jogmsith@ucsc.edu
 
-rm(list=ls())
+rm(list = ls())
 
 
 ################################################################################
-#Load packages and data, set dir
+# Load packages and data
 
 librarian::shelf(tidyverse, janitor, googlesheets4)
 
-#load data
-
-#NOTE: input is currently set as first entry. Need to update to final reconciled
-#data when complete.
+# NOTE: input is currently set as first entry. Update to final reconciled
+# data when complete.
 
 spreadsheet_url <- "https://docs.google.com/spreadsheets/d/129OyWLuE64lXgXDu7VDU1EHLWpjZ0C5bverqpEhO9S8/edit"
 
@@ -43,7 +41,7 @@ fronds_raw <- googlesheets4::read_sheet(
 
 
 ################################################################################
-#Convert depth to meters
+# Convert depth to meters
 
 urch_raw_m <- urch_raw %>%
   mutate(
@@ -65,11 +63,11 @@ urch_raw_m <- urch_raw %>%
 
 
 ################################################################################
-#Step 1: clean up data for live urchin density and behavior
+# Step 1: clean live urchin density and behavior data
 
-#Keep blank-behavior count rows and concealed/exposed behavior rows only.
-#Exclude Unknown species and other behavior categories, which are used for
-#cracked-test data.
+# Keep blank-behavior count rows and concealed/exposed behavior rows only.
+# Exclude Unknown species and other behavior categories, which are used for
+# cracked-test data.
 
 urch_build1 <- urch_raw_m %>%
   mutate(
@@ -90,16 +88,15 @@ urch_build1 <- urch_raw_m %>%
 
 
 ################################################################################
-#Step 2: process live urchin density and behavior data
+# Step 2: process live urchin density and behavior data
 
-#Total counts are recorded for each species on a transect. Extrapolation is
-#not needed.
+# Total counts are recorded for each species on a transect. Extrapolation is
+# not needed.
 
 str(urch_build1)
 
 
-#Calculate behavior proportions from the behavior sample for each transect
-#and species.
+# Calculate behavior proportions for each transect and species.
 
 urch_behav_build1 <- urch_build1 %>%
   filter(behavior_clean %in% c("concealed", "exposed")) %>%
@@ -125,8 +122,8 @@ urch_behav_build1 <- urch_build1 %>%
   )
 
 
-#Calculate live urchin density and add behavior proportions and estimated
-#behavior-specific densities.
+# Calculate live urchin density and add behavior proportions and estimated
+# behavior-specific densities.
 
 urch_den_live_build1 <- urch_build1 %>%
   group_by(
@@ -166,10 +163,10 @@ urch_den_live_build1 <- urch_build1 %>%
 
 
 ################################################################################
-#Step 3: process cracked-test and whole-test density data
+# Step 3: process cracked-test and whole-test density data
 
-#Use the original data so Unknown species records are retained.
-#Identify test condition from behavior labels containing "crack" or "whole".
+# Use the original data so Unknown species records are retained.
+# Identify test condition from behavior labels containing "crack" or "whole".
 
 urch_test_build1 <- urch_raw_m %>%
   mutate(
@@ -217,9 +214,9 @@ urch_test_build1 <- urch_raw_m %>%
 
 
 ################################################################################
-#Step 4: combine live urchin and test density data
+# Step 4: combine live urchin and test density data
 
-#The full join retains Unknown species rows used for test data.
+# The full join retains Unknown species rows used for test data.
 
 urch_den_build1 <- full_join(
   urch_den_live_build1,
@@ -233,7 +230,7 @@ urch_den_build1 <- full_join(
 
 
 ################################################################################
-#Step 5: convert the combined table to wide format
+# Step 5: convert the combined table to wide format
 
 urch_den_build1_wide <- urch_den_build1 %>%
   pivot_wider(
@@ -259,7 +256,7 @@ urch_den_build1_wide <- urch_den_build1 %>%
     names_glue = "{.value}_{species}"
   ) %>%
   arrange(site, zone, date, transect) %>%
-  #Replace numeric NAs with true zeros
+  # Replace numeric NAs with true zeros
   mutate(
     across(
       where(is.numeric),
@@ -269,8 +266,8 @@ urch_den_build1_wide <- urch_den_build1 %>%
   clean_names()
 
 
-#Remove Unknown columns that are not test-density measures, as well as
-#density_source columns for Purple and Red.
+# Remove Unknown columns that are not test-density measures, as well as
+# density_source columns for Purple and Red.
 
 urch_den_build1_wide <- urch_den_build1_wide %>%
   dplyr::select(
@@ -287,8 +284,8 @@ urch_den_build1_wide <- urch_den_build1_wide %>%
 
 
 ################################################################################
-#Check that the filtered live urchin source and density table have the same
-#transects
+# Check that the filtered live urchin source and density table have the same
+# transects
 
 urch_build1_keys <- urch_build1 %>%
   distinct(date, site, transect)
@@ -297,7 +294,7 @@ urch_den_build1_keys <- urch_den_live_build1 %>%
   distinct(date, site, transect)
 
 
-#Compare number of unique transect combinations and sites
+# Compare number of unique transect combinations and sites
 
 tibble(
   dataset = c("urch_build1", "urch_den_live_build1"),
@@ -312,7 +309,7 @@ tibble(
 )
 
 
-#Transects present in filtered source but missing from live density table
+# Transects present in filtered source but missing from live density table
 
 anti_join(
   urch_build1_keys,
@@ -321,7 +318,7 @@ anti_join(
 )
 
 
-#Transects present in live density table but not in filtered source
+# Transects present in live density table but not in filtered source
 
 anti_join(
   urch_den_build1_keys,
@@ -331,8 +328,7 @@ anti_join(
 
 
 ################################################################################
-#Step 6: csize frequency 
-
+# Step 6: process size frequency data
 
 urch_sizefreq_build1 <- urch_build1 %>%
   filter(
@@ -372,27 +368,72 @@ urch_sizefreq_build1 <- urch_build1 %>%
   arrange(site, zone, date, transect, species, size)
 
 
+################################################################################
+# Step 7: expand counts into individual-level rows
 
-###############################################################################
-#Export
+# Use records with a valid species, size, and concealed/exposed behavior.
+# Blank-behavior density totals are excluded to avoid duplicating the
+# behavior/size sample.
+#
+# The spelling "conceiled" was corrected to "concealed" in Step 1.
+
+urch_individuals_build1_source <- urch_build1 %>%
+  filter(
+    behavior_clean %in% c("concealed", "exposed"),
+    !is.na(species),
+    str_trim(species) != "",
+    !is.na(size),
+    str_trim(size) != "",
+    !is.na(count),
+    count > 0
+  ) %>%
+  mutate(
+    size = as.numeric(size),
+    behavior = behavior_clean
+  ) %>%
+  dplyr::select(
+    site, site_type, zone, date, transect,
+    depth, depth_units, species, behavior, size, count
+  )
+
+
+# Counts must be whole numbers to expand into individual rows.
+
+if (any(
+  urch_individuals_build1_source$count !=
+  floor(urch_individuals_build1_source$count)
+)) {
+  stop(
+    "Some counts in the individual-level source data are not whole numbers."
+  )
+}
+
+
+urch_individuals_build1 <- urch_individuals_build1_source %>%
+  tidyr::uncount(
+    weights = count,
+    .remove = TRUE
+  ) %>%
+  arrange(
+    site, zone, date, transect, species, behavior, size
+  )
+
+
+################################################################################
+# Save tables in one RData file
+
 processed_dir <- "/Volumes/enhydra/data/kelp_productivity/benthic_surveys/processed"
 
 if (!dir.exists(processed_dir)) {
   stop("Processed directory does not exist or the volume is not mounted.")
 }
 
-processed_tables <- list(
-  urch_den_build1_wide = urch_den_build1_wide,
-  urch_sizefreq_build1 = urch_sizefreq_build1
-)
-
-saveRDS(
-  processed_tables,
+save(
+  urch_den_build1_wide,
+  urch_sizefreq_build1,
+  urch_individuals_build1,
   file = file.path(
     processed_dir,
-    "urchin_density_and_size_frequency_build1.rds"
+    "urchin_density_and_size_frequency_build2.RData"
   )
 )
-
-
-
